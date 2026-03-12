@@ -1,0 +1,27 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: webm-to-ogg-opus:latest
+    container_name: webm-to-ogg-opus
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      NODE_ENV: "production"
+      # IMPORTANTE: defina API_KEY via arquivo .env ou variável de ambiente do host
+      API_KEY: "${API_KEY}"
+      MAX_AUDIO_BYTES: "${MAX_AUDIO_BYTES:-26214400}"
+      JSON_BODY_LIMIT: "${JSON_BODY_LIMIT:-35mb}"
+      FFMPEG_TIMEOUT_MS: "${FFMPEG_TIMEOUT_MS:-30000}"
+      RATE_LIMIT_WINDOW_MS: "${RATE_LIMIT_WINDOW_MS:-60000}"
+      RATE_LIMIT_MAX_REQUESTS: "${RATE_LIMIT_MAX_REQUESTS:-60}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
