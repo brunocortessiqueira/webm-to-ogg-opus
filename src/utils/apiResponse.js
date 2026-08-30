@@ -16,18 +16,32 @@ function success(res, audioBase64, statusCode = 200) {
 }
 
 /**
- * Resposta de erro padrão
+ * Resposta de erro padrão.
+ *
+ * `code` e `detalhes` são opcionais e só aparecem quando existem, para não
+ * mudar o formato que os clientes de áudio já consomem. Servem ao caso em que o
+ * cliente precisa reagir ao erro e não só exibi-lo — um vídeo longo demais, por
+ * exemplo, devolve a duração máxima suportada para que o operador saiba quanto
+ * cortar.
+ *
  * @param {import('express').Response} res
  * @param {string} message
  * @param {number} [statusCode=500]
+ * @param {object} [extras]
+ * @param {string} [extras.code]
+ * @param {object} [extras.detalhes]
  */
-function error(res, message, statusCode = 500) {
-  return res.status(statusCode).json({
+function error(res, message, statusCode = 500, extras = {}) {
+  const corpo = {
     status: false,
     erro: message,
     audio: '',
     mimetype: '',
-  });
+  };
+  if (extras.code) corpo.code = extras.code;
+  if (extras.detalhes) corpo.detalhes = extras.detalhes;
+
+  return res.status(statusCode).json(corpo);
 }
 
 /**

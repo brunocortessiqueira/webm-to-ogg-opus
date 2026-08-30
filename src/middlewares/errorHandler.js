@@ -19,7 +19,10 @@ function errorHandler(err, req, res, next) {
       httpStatus: err.httpStatus,
       message: err.message,
     });
-    return apiResponse.error(res, err.message, err.httpStatus);
+    return apiResponse.error(res, err.message, err.httpStatus, {
+      code: err.code,
+      detalhes: err.detalhes,
+    });
   }
 
   // Erros de payload do Express (JSON malformado)

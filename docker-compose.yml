@@ -16,6 +16,14 @@ services:
       MAX_AUDIO_BYTES: "${MAX_AUDIO_BYTES:-26214400}"
       JSON_BODY_LIMIT: "${JSON_BODY_LIMIT:-35mb}"
       FFMPEG_TIMEOUT_MS: "${FFMPEG_TIMEOUT_MS:-30000}"
+      # Vídeo: limites próprios, porque 2 min de celular dão ~174 MB.
+      MAX_VIDEO_BYTES: "${MAX_VIDEO_BYTES:-314572800}"
+      FFMPEG_VIDEO_TIMEOUT_MS: "${FFMPEG_VIDEO_TIMEOUT_MS:-180000}"
+      MEDIA_FETCH_TIMEOUT_MS: "${MEDIA_FETCH_TIMEOUT_MS:-120000}"
+      MEDIA_TARGET_BYTES: "${MEDIA_TARGET_BYTES:-16777216}"
+      # Sem esta lista o endpoint de vídeo recusa tudo — é o que impede o
+      # serviço de virar um proxy para a rede interna (SSRF).
+      MEDIA_ALLOWED_HOSTS: "${MEDIA_ALLOWED_HOSTS:-}"
       RATE_LIMIT_WINDOW_MS: "${RATE_LIMIT_WINDOW_MS:-60000}"
       RATE_LIMIT_MAX_REQUESTS: "${RATE_LIMIT_MAX_REQUESTS:-60}"
       LOG_LEVEL: "${LOG_LEVEL:-info}"

@@ -6,25 +6,23 @@ const AppError = require('../utils/appError');
 const logger = require('../utils/logger');
 
 /**
- * Executa ffmpeg para converter inputPath em OGG Opus, salvando em outputPath.
- * Usa spawn com array de argumentos (sem interpolação de shell).
+ * Executa ffmpeg com os argumentos dados.
  *
- * @param {string} inputPath  - Caminho absoluto do arquivo de entrada
- * @param {string} outputPath - Caminho absoluto do arquivo de saída (.ogg)
- * @param {string} requestId
+ * Existe porque `runFfmpeg` tinha os argumentos embutidos, todos exclusivos de
+ * áudio — inclusive um `-vn`, que descarta a trilha de vídeo. Vídeo precisa de
+ * escala, codec e bitrate próprios, então a lista passou a ser do chamador e
+ * aqui ficou só o que é comum: spawn sem shell, timeout, captura de stderr e
+ * tradução do código de saída em AppError.
+ *
+ * @param {string[]} args        - Argumentos completos do ffmpeg
+ * @param {object}   opcoes
+ * @param {string}   opcoes.requestId
+ * @param {number}   [opcoes.timeoutMs] - Padrão: FFMPEG_TIMEOUT_MS (áudio)
  * @returns {Promise<void>}
  */
-function runFfmpeg(inputPath, outputPath, requestId) {
+function executarFfmpeg(args, { requestId, timeoutMs } = {}) {
+  const limite = timeoutMs || env.FFMPEG_TIMEOUT_MS;
   return new Promise((resolve, reject) => {
-    const args = [
-      '-y',
-      '-i', inputPath,
-      '-vn',
-      '-c:a', 'libopus',
-      '-b:a', '64k',
-      outputPath,
-    ];
-
     logger.debug('Iniciando ffmpeg', { requestId, args: args.join(' ') });
 
     let proc;
@@ -44,8 +42,8 @@ function runFfmpeg(inputPath, outputPath, requestId) {
 
     const timeoutHandle = setTimeout(() => {
       proc.kill('SIGKILL');
-      reject(new AppError('Timeout na conversão do áudio', 504, 'FFMPEG_TIMEOUT'));
-    }, env.FFMPEG_TIMEOUT_MS);
+      reject(new AppError('Timeout na conversão', 504, 'FFMPEG_TIMEOUT'));
+    }, limite);
 
     proc.on('error', (err) => {
       clearTimeout(timeoutHandle);
@@ -86,4 +84,27 @@ function runFfmpeg(inputPath, outputPath, requestId) {
   });
 }
 
-module.exports = { runFfmpeg };
+/**
+ * Converte um arquivo de áudio em OGG Opus.
+ *
+ * Assinatura preservada: é o caminho que já roda em produção e o que os testes
+ * de áudio esperam. Só o corpo passou a delegar para `executarFfmpeg`.
+ *
+ * @param {string} inputPath  - Caminho absoluto do arquivo de entrada
+ * @param {string} outputPath - Caminho absoluto do arquivo de saída (.ogg)
+ * @param {string} requestId
+ * @returns {Promise<void>}
+ */
+function runFfmpeg(inputPath, outputPath, requestId) {
+  const args = [
+    '-y',
+    '-i', inputPath,
+    '-vn',
+    '-c:a', 'libopus',
+    '-b:a', '64k',
+    outputPath,
+  ];
+  return executarFfmpeg(args, { requestId, timeoutMs: env.FFMPEG_TIMEOUT_MS });
+}
+
+module.exports = { runFfmpeg, executarFfmpeg };
